@@ -1501,11 +1501,11 @@ class GraphAdjDataset(Dataset):
         return self.data[idx]
 
     def save(self, filename):
-        cache = defaultdict(list)
-        for x in self.data:
-            for k in list(x.keys()):
-                if k.startswith("_"):
-                    cache[k].append(x.pop(k))
+        # cache = defaultdict(list)
+        # for x in self.data:
+        #     for k in list(x.keys()):
+        #         if k.startswith("_"):
+        #             cache[k].append(x.pop(k))
         with open(filename, "wb") as f:
             try:
                 th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL,
@@ -1513,11 +1513,11 @@ class GraphAdjDataset(Dataset):
             except TypeError:
                 th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL)
 
-        if len(cache) > 0:
-            keys = cache.keys()
-            for i in range(len(self.data)):
-                for k in keys:
-                    self.data[i][k] = cache[k][i]
+        # if len(cache) > 0:
+        #     keys = cache.keys()
+        #     for i in range(len(self.data)):
+        #         for k in keys:
+        #             self.data[i][k] = cache[k][i]
 
     def load(self, filename):
         with open(filename, "rb") as f:
