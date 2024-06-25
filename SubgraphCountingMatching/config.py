@@ -276,7 +276,8 @@ def add_rep_net_config(parser):
         "--rep_net",
         type=str,
         default="CNN",
-        choices=["CNN", "RNN", "TXL", "RGCN", "RGIN", "CompGCN", "DMPNN", "LRP", "DMPLRP"],
+        choices=["CNN", "RNN", "TXL", "RGCN", "RGIN",
+                 "CompGCN", "DMPNN", "LRP", "DMPLRP"],
         help="representation network"
     )
 
@@ -544,7 +545,7 @@ def add_train_config(parser):
     parser.add_argument(
         "--early_stop_rounds",
         type=int,
-        default=10,
+        default=3,
         help="tolerance rounds for early stopping"
     )
 
@@ -606,6 +607,18 @@ def add_data_config(parser):
 
     parser.add_argument(
         "--metadata_dir",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
+        "--train_key",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
+        "--test_key",
         type=str,
         default=""
     )

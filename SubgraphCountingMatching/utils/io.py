@@ -6,6 +6,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import os
+import pickle
 from argparse import Namespace
 from collections import OrderedDict, namedtuple
 from multiprocessing import Pool
@@ -66,7 +67,8 @@ def read_graphs_from_dir(dirpath, num_workers=4):
     with Pool(num_workers if num_workers > 0 else os.cpu_count()) as pool:
         results = list()
         for subdir in subdirs:
-            results.append((subdir, pool.apply_async(_read_graphs_from_dir, args=(subdir, ))))
+            results.append((subdir, pool.apply_async(
+                _read_graphs_from_dir, args=(subdir, ))))
         pool.close()
 
         for subdir, x in tqdm(results):
@@ -84,7 +86,8 @@ def read_patterns_from_dir(dirpath, num_workers=4):
     with Pool(num_workers if num_workers > 0 else os.cpu_count()) as pool:
         results = list()
         for subdir in subdirs:
-            results.append((subdir, pool.apply_async(_read_graphs_from_dir, args=(subdir, ))))
+            results.append((subdir, pool.apply_async(
+                _read_graphs_from_dir, args=(subdir, ))))
         pool.close()
 
         for subdir, x in tqdm(results):
@@ -125,7 +128,8 @@ def read_metadata_from_dir(dirpath, num_workers=4):
                 results.append(
                     (
                         os.path.splitext(os.path.basename(filename))[0],
-                        pool.apply_async(_read_metadata_from_csv, args=(filename, ))
+                        pool.apply_async(
+                            _read_metadata_from_csv, args=(filename, ))
                     )
                 )
         pool.close()
@@ -142,21 +146,56 @@ def read_metadata_from_dir(dirpath, num_workers=4):
     return meta
 
 
+def load_data_v2(graph_dir, train_key_file, test_key_file):
+    train_key_file = os.path.join(graph_dir, train_key_file)
+    test_key_file = os.path.join(graph_dir, test_key_file)
+    train_keys = pickle.load(open(train_key_file, "rb"))
+    test_keys = pickle.load(open(test_key_file, "rb"))
+
+    train_data, dev_data, test_data = list(), list(), list()
+    for key in train_keys:
+        with open(os.path.join(graph_dir, key), "rb") as f:
+            pattern, graph, mapping = pickle.load(f)
+            x = dict()
+            x["id"] = key
+            x["pattern"] = ig.Graph.from_networkx(pattern)
+            x["graph"] = ig.Graph.from_networkx(graph)
+            x["subisomorphisms"] = np.expand_dims(np.array(mapping).T[1], 0)
+            x["counts"] = 1
+            train_data.append(x)
+
+    for key in test_keys:
+        with open(os.path.join(graph_dir, key), "rb") as f:
+            pattern, graph, mapping = pickle.load(f)
+            x = dict()
+            x["id"] = key
+            x["pattern"] = ig.Graph.from_networkx(pattern)
+            x["graph"] = ig.Graph.from_networkx(graph)
+            x["subisomorphisms"] = np.expand_dims(np.array(mapping).T[1], 0)
+            x["counts"] = 1
+            test_data.append(x)
+
+    return OrderedDict({"train": train_data, "dev": dev_data, "test": test_data}), False
+
+
 def load_data(pattern_dir, graph_dir, metadata_dir, num_workers=4):
     patterns = read_patterns_from_dir(pattern_dir, num_workers=num_workers)
     graphs = read_graphs_from_dir(graph_dir, num_workers=num_workers)
     meta = read_metadata_from_dir(metadata_dir, num_workers=num_workers)
 
     if os.path.exists(os.path.join(metadata_dir, "train.txt")):
-        train_indices = set([int(x) for x in open(os.path.join(metadata_dir, "train.txt"))])
+        train_indices = set([int(x) for x in open(
+            os.path.join(metadata_dir, "train.txt"))])
     else:
         train_indices = None
     if os.path.exists(os.path.join(metadata_dir, "dev.txt")):
-        dev_indices = set([int(x) for x in open(os.path.join(metadata_dir, "dev.txt"))])
+        dev_indices = set([int(x) for x in open(
+            os.path.join(metadata_dir, "dev.txt"))])
     else:
         dev_indices = None
     if os.path.exists(os.path.join(metadata_dir, "test.txt")):
-        test_indices = set([int(x) for x in open(os.path.join(metadata_dir, "test.txt"))])
+        test_indices = set([int(x) for x in open(
+            os.path.join(metadata_dir, "test.txt"))])
     else:
         test_indices = None
 
