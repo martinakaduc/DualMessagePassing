@@ -1425,12 +1425,17 @@ if __name__ == "__main__":
     for epoch in range(config["train_epochs"]):
         for data_type, dataset in datasets.items():
             if data_type == "train":
-                tmp = dataset.__class__()
-                tmp.data = list(dataset.data)
-                np.random.shuffle(tmp.data)
-                tmp.data = tmp.data[:math.ceil(
+                # tmp = dataset.__class__()
+                # tmp.data = list(dataset.data)
+                # np.random.shuffle(tmp.data)
+                # tmp.data = tmp.data[:math.ceil(
+                #     len(dataset.data)*config["train_ratio"])]
+                # dataset = tmp
+
+                np.random.shuffle(dataset.data)
+                dataset.data = dataset.data[:math.ceil(
                     len(dataset.data)*config["train_ratio"])]
-                dataset = tmp
+
                 # circurriculum learning
                 sampler = CircurriculumSampler(
                     dataset,
