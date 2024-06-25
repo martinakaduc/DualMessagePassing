@@ -1488,8 +1488,8 @@ class GraphAdjDataset(Dataset):
             with open(os.path.join(self.graph_dir, self.data[idx]), "rb") as f:
                 pattern, graph, mapping = pickle.load(f)
                 x["id"] = self.data[idx]
-                x["pattern"] = ig.Graph.from_networkx(pattern)
-                x["graph"] = ig.Graph.from_networkx(graph)
+                x["pattern"] = Graph(ig.Graph.from_networkx(pattern))
+                x["graph"] = Graph(ig.Graph.from_networkx(graph))
                 if len(mapping) > 0:
                     x["subisomorphisms"] = th.from_numpy(np.expand_dims(
                         np.array(mapping).T[1], 0))
