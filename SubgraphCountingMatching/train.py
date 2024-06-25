@@ -135,18 +135,18 @@ def load_edgeseq_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test_
         if logger:
             logger.info("loading datasets from {}".format(save_data_dir))
         datasets = OrderedDict()
-        datasets["train"] = EdgeSeqDataset(graph_dir=graph_dir).load(
-            os.path.join(save_data_dir, "train_edgeseq_dataset.pt"))
+        datasets["train"] = EdgeSeqDataset().load(
+            os.path.join(save_data_dir, "train_edgeseq_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} training data have been loaded".format(
                 len(datasets["train"])))
-        datasets["dev"] = EdgeSeqDataset(graph_dir=graph_dir).load(
-            os.path.join(save_data_dir, "dev_edgeseq_dataset.pt"))
+        datasets["dev"] = EdgeSeqDataset().load(
+            os.path.join(save_data_dir, "dev_edgeseq_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} dev data have been loaded".format(
                 len(datasets["dev"])))
-        datasets["test"] = EdgeSeqDataset(graph_dir=graph_dir).load(
-            os.path.join(save_data_dir, "test_edgeseq_dataset.pt"))
+        datasets["test"] = EdgeSeqDataset().load(
+            os.path.join(save_data_dir, "test_edgeseq_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} test data have been loaded".format(
                 len(datasets["test"])))

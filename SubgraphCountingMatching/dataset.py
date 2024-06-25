@@ -1550,11 +1550,12 @@ class GraphAdjDataset(Dataset):
         #         for k in keys:
         #             self.data[i][k] = cache[k][i]
 
-    def load(self, filename):
+    def load(self, filename, graph_dir='./'):
         with open(filename, "rb") as f:
             data = th.load(f)
         del self.data
         self.data = data
+        self.graph_dir = graph_dir
 
         return self
 
