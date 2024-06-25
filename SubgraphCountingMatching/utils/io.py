@@ -153,7 +153,7 @@ def load_data_v2(graph_dir, train_key_file, test_key_file):
     test_keys = pickle.load(open(test_key_file, "rb"))
 
     train_data, dev_data, test_data = list(), list(), list()
-    for key in train_keys:
+    for key in tqdm(train_keys, desc="Loading train data"):
         with open(os.path.join(graph_dir, key), "rb") as f:
             pattern, graph, mapping = pickle.load(f)
             x = dict()
@@ -168,7 +168,7 @@ def load_data_v2(graph_dir, train_key_file, test_key_file):
             x["counts"] = 1
             train_data.append(x)
 
-    for key in test_keys:
+    for key in tqdm(test_keys, desc="Loading test data"):
         with open(os.path.join(graph_dir, key), "rb") as f:
             pattern, graph, mapping = pickle.load(f)
             x = dict()
