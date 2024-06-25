@@ -1491,10 +1491,10 @@ class GraphAdjDataset(Dataset):
                 x["pattern"] = ig.Graph.from_networkx(pattern)
                 x["graph"] = ig.Graph.from_networkx(graph)
                 if len(mapping) > 0:
-                    x["subisomorphisms"] = np.expand_dims(
-                        np.array(mapping).T[1], 0)
+                    x["subisomorphisms"] = th.from_numpy(np.expand_dims(
+                        np.array(mapping).T[1], 0))
                 else:
-                    x["subisomorphisms"] = np.array([])
+                    x["subisomorphisms"] = th.tensor([], dtype=th.int64)
                 x["counts"] = 1
             return x
 
@@ -1529,35 +1529,35 @@ class GraphAdjDataset(Dataset):
 
     @staticmethod
     def preprocess(x, cache=None):
-        p_id, g_id = x["id"].split("-")
-        if cache is None:
-            pattern = Graph(x["pattern"])
-            graph = Graph(x["graph"])
-        else:
-            if p_id in cache:
-                pattern = cache[p_id]
-            else:
-                cache[p_id] = pattern = Graph(x["pattern"])
-            if g_id in cache:
-                graph = cache[g_id]
-            else:
-                cache[g_id] = graph = Graph(x["graph"])
+        # p_id, g_id = x["id"].split("-")
+        # if cache is None:
+        #     pattern = Graph(x["pattern"])
+        #     graph = Graph(x["graph"])
+        # else:
+        #     if p_id in cache:
+        #         pattern = cache[p_id]
+        #     else:
+        #         cache[p_id] = pattern = Graph(x["pattern"])
+        #     if g_id in cache:
+        #         graph = cache[g_id]
+        #     else:
+        #         cache[g_id] = graph = Graph(x["graph"])
 
-        subisomorphisms = x["subisomorphisms"]
-        if isinstance(subisomorphisms, list):
-            subisomorphisms = th.tensor(subisomorphisms, dtype=th.int64)
-        elif isinstance(subisomorphisms, np.ndarray):
-            subisomorphisms = th.from_numpy(subisomorphisms)
-        elif isinstance(subisomorphisms, th.Tensor):
-            pass
+        # subisomorphisms = x["subisomorphisms"]
+        # if isinstance(subisomorphisms, list):
+        #     subisomorphisms = th.tensor(subisomorphisms, dtype=th.int64)
+        # elif isinstance(subisomorphisms, np.ndarray):
+        #     subisomorphisms = th.from_numpy(subisomorphisms)
+        # elif isinstance(subisomorphisms, th.Tensor):
+        #     pass
 
-        x = {
-            "id": x["id"],
-            "pattern": pattern,
-            "graph": graph,
-            "counts": x["counts"],
-            "subisomorphisms": subisomorphisms
-        }
+        # x = {
+        #     "id": x["id"],
+        #     "pattern": pattern,
+        #     "graph": graph,
+        #     "counts": x["counts"],
+        #     "subisomorphisms": subisomorphisms
+        # }
 
         return x
 
@@ -1889,7 +1889,7 @@ class LRPDataset(Dataset):
 
     @staticmethod
     def generate_neighbour_perms(adj_m, start_node):
-        adjlist = adj_m.indices[adj_m.indptr[start_node]                                :adj_m.indptr[start_node+1]]
+        adjlist = adj_m.indices[adj_m.indptr[start_node]:adj_m.indptr[start_node+1]]
         nei_len = LRPDataset.seq_len - 1
         all_perm = permutations(adjlist, min(nei_len, len(adjlist)))
         # all_perm = combinations(adjlist, min(nei_len, len(adjlist)))
