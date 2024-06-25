@@ -135,17 +135,17 @@ def load_edgeseq_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test_
         if logger:
             logger.info("loading datasets from {}".format(save_data_dir))
         datasets = OrderedDict()
-        datasets["train"] = EdgeSeqDataset().load(
+        datasets["train"] = EdgeSeqDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "train_edgeseq_dataset.pt"))
         if logger:
             logger.info("{:8d} training data have been loaded".format(
                 len(datasets["train"])))
-        datasets["dev"] = EdgeSeqDataset().load(
+        datasets["dev"] = EdgeSeqDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "dev_edgeseq_dataset.pt"))
         if logger:
             logger.info("{:8d} dev data have been loaded".format(
                 len(datasets["dev"])))
-        datasets["test"] = EdgeSeqDataset().load(
+        datasets["test"] = EdgeSeqDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "test_edgeseq_dataset.pt"))
         if logger:
             logger.info("{:8d} test data have been loaded".format(
@@ -175,7 +175,8 @@ def load_edgeseq_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test_
             data["train"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("train")
         if logger:
@@ -185,7 +186,8 @@ def load_edgeseq_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test_
             data["dev"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("dev")
         if logger:
@@ -195,7 +197,8 @@ def load_edgeseq_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test_
             data["test"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("test")
         if logger:
@@ -228,17 +231,17 @@ def load_graphadj_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test
         ]
     ):
         datasets = OrderedDict()
-        datasets["train"] = GraphAdjDataset().load(
+        datasets["train"] = GraphAdjDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "train_graphadj_dataset.pt"))
         if logger:
             logger.info("{:8d} training data have been loaded".format(
                 len(datasets["train"])))
-        datasets["dev"] = GraphAdjDataset().load(
+        datasets["dev"] = GraphAdjDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "dev_graphadj_dataset.pt"))
         if logger:
             logger.info("{:8d} dev data have been loaded".format(
                 len(datasets["dev"])))
-        datasets["test"] = GraphAdjDataset().load(
+        datasets["test"] = GraphAdjDataset(graph_dir=graph_dir).load(
             os.path.join(save_data_dir, "test_graphadj_dataset.pt"))
         if logger:
             logger.info("{:8d} test data have been loaded".format(
@@ -264,7 +267,8 @@ def load_graphadj_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test
             data["train"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("train")
         if logger:
@@ -274,7 +278,8 @@ def load_graphadj_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test
             data["dev"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("dev")
         if logger:
@@ -284,7 +289,8 @@ def load_graphadj_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test
             data["test"],
             cache=cache,
             num_workers=num_workers,
-            share_memory=shared_graph
+            share_memory=shared_graph,
+            graph_dir=graph_dir
         )
         data.pop("test")
         if logger:
@@ -1344,7 +1350,8 @@ if __name__ == "__main__":
                 datasets[data_type],
                 cache=cache,
                 num_workers=config["num_workers"],
-                share_memory=share_memory
+                share_memory=share_memory,
+                graph_dir=config["graph_dir"]
             )
             for x in lrp_datasets[data_type]:
                 x["g_len"] = len(x["graph"])

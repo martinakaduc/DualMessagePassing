@@ -153,35 +153,38 @@ def load_data_v2(graph_dir, train_key_file, test_key_file):
     test_keys = pickle.load(open(test_key_file, "rb"))
 
     train_data, dev_data, test_data = list(), list(), list()
-    for key in tqdm(train_keys, desc="Loading train data"):
-        with open(os.path.join(graph_dir, key), "rb") as f:
-            pattern, graph, mapping = pickle.load(f)
-            x = dict()
-            x["id"] = key
-            x["pattern"] = ig.Graph.from_networkx(pattern)
-            x["graph"] = ig.Graph.from_networkx(graph)
-            if len(mapping) > 0:
-                x["subisomorphisms"] = np.expand_dims(
-                    np.array(mapping).T[1], 0)
-            else:
-                x["subisomorphisms"] = np.array([])
-            x["counts"] = 1
-            train_data.append(x)
+    # for key in tqdm(train_keys, desc="Loading train data"):
+    #     with open(os.path.join(graph_dir, key), "rb") as f:
+    #         pattern, graph, mapping = pickle.load(f)
+    #         x = dict()
+    #         x["id"] = key
+    #         x["pattern"] = ig.Graph.from_networkx(pattern)
+    #         x["graph"] = ig.Graph.from_networkx(graph)
+    #         if len(mapping) > 0:
+    #             x["subisomorphisms"] = np.expand_dims(
+    #                 np.array(mapping).T[1], 0)
+    #         else:
+    #             x["subisomorphisms"] = np.array([])
+    #         x["counts"] = 1
+    #         train_data.append(x)
 
-    for key in tqdm(test_keys, desc="Loading test data"):
-        with open(os.path.join(graph_dir, key), "rb") as f:
-            pattern, graph, mapping = pickle.load(f)
-            x = dict()
-            x["id"] = key
-            x["pattern"] = ig.Graph.from_networkx(pattern)
-            x["graph"] = ig.Graph.from_networkx(graph)
-            if len(mapping) > 0:
-                x["subisomorphisms"] = np.expand_dims(
-                    np.array(mapping).T[1], 0)
-            else:
-                x["subisomorphisms"] = np.array([])
-            x["counts"] = 1
-            test_data.append(x)
+    # for key in tqdm(test_keys, desc="Loading test data"):
+    #     with open(os.path.join(graph_dir, key), "rb") as f:
+    #         pattern, graph, mapping = pickle.load(f)
+    #         x = dict()
+    #         x["id"] = key
+    #         x["pattern"] = ig.Graph.from_networkx(pattern)
+    #         x["graph"] = ig.Graph.from_networkx(graph)
+    #         if len(mapping) > 0:
+    #             x["subisomorphisms"] = np.expand_dims(
+    #                 np.array(mapping).T[1], 0)
+    #         else:
+    #             x["subisomorphisms"] = np.array([])
+    #         x["counts"] = 1
+    #         test_data.append(x)
+
+    train_data = train_keys
+    test_data = test_keys
 
     return OrderedDict({"train": train_data, "dev": dev_data, "test": test_data}), False
 

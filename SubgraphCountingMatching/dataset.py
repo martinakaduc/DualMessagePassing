@@ -9,6 +9,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.sparse as tsp
+import igraph as ig
 from collections import defaultdict, OrderedDict, Counter
 from itertools import permutations, combinations
 
@@ -229,7 +230,8 @@ class EdgeSeq:
         else:
             if self._number_of_tuples == 0:
                 return 0
-            max_uv = th.stack([self.tdata["u"].max(dim=1)[0], self.tdata["v"].max(dim=1)[0]], dim=0).max(dim=0)[0]
+            max_uv = th.stack([self.tdata["u"].max(
+                dim=1)[0], self.tdata["v"].max(dim=1)[0]], dim=0).max(dim=0)[0]
             return max_uv.sum().item() + self.batch_size
 
     def number_of_tuples(self):
@@ -281,16 +283,19 @@ class EdgeSeq:
                 if self._number_of_tuples == 0:
                     in_deg = th.zeros((0, ), dtype=th.long)
                 else:
-                    in_deg = th.bincount(self.v, minlength=self.u.max().item() + 1)
+                    in_deg = th.bincount(
+                        self.v, minlength=self.u.max().item() + 1)
             else:
                 if self._number_of_tuples == 0:
-                    in_deg = th.zeros((len(self._batch_num_tuples), 0), dtype=th.long)
+                    in_deg = th.zeros(
+                        (len(self._batch_num_tuples), 0), dtype=th.long)
                 else:
                     v_lens = self._batch_num_tuples
                     num_us = (self.u.max(dim=1)[0] + 1).cpu().tolist()
                     in_deg = batch_convert_tensor_to_tensor(
                         [
-                            th.bincount(self.v[i, -v_lens[i]:], minlength=num_us[i])
+                            th.bincount(self.v[i, -v_lens[i]:],
+                                        minlength=num_us[i])
                             for i in range(self.batch_size)
                         ],
                         pre_pad=True
@@ -306,16 +311,19 @@ class EdgeSeq:
                 if self._number_of_tuples == 0:
                     out_deg = th.zeros((0, ), dtype=th.long)
                 else:
-                    out_deg = th.bincount(self.u, minlength=self.v.max().item() + 1)
+                    out_deg = th.bincount(
+                        self.u, minlength=self.v.max().item() + 1)
             else:
                 if self._number_of_tuples == 0:
-                    out_deg = th.zeros((len(self._batch_num_tuples), 0), dtype=th.long)
+                    out_deg = th.zeros(
+                        (len(self._batch_num_tuples), 0), dtype=th.long)
                 else:
                     u_lens = self._batch_num_tuples
                     num_vs = (self.v.max(dim=1)[0] + 1).cpu().tolist()
                     out_deg = batch_convert_tensor_to_tensor(
                         [
-                            th.bincount(self.u[i, -u_lens[i]:], minlength=num_vs[i])
+                            th.bincount(self.u[i, -u_lens[i]:],
+                                        minlength=num_vs[i])
                             for i in range(self.batch_size)
                         ],
                         pre_pad=True
@@ -343,7 +351,8 @@ class EdgeSeq:
             edges = edges.numpy()
             num_edges = len(edges)
             for num_tuples in subseq._batch_num_tuples:
-                idx = long_array_bisect_right(edges, seq_len - num_tuples, 0, num_edges)
+                idx = long_array_bisect_right(
+                    edges, seq_len - num_tuples, 0, num_edges)
                 subseq._batch_num_tuples.append(edges.shape[0] - idx)
             subseq._number_of_tuples = sum(subseq._number_of_tuples)
 
@@ -356,7 +365,8 @@ class EdgeSeq:
 
         with th.no_grad():
             # find the index
-            idx = th.stack([self.tdata["u"], self.tdata["v"], self.tdata["el"]], dim=-1).numpy()
+            idx = th.stack([self.tdata["u"], self.tdata["v"],
+                           self.tdata["el"]], dim=-1).numpy()
             idx = bisect_left(idx, np.array([u, v, el], dtype=idx.dtype))
 
             # update degrees
@@ -366,7 +376,8 @@ class EdgeSeq:
                     self.tdata[INDEGREE] = th.cat(
                         [
                             self.tdata[INDEGREE],
-                            th.zeros((diff, ), dtype=self.tdata[INDEGREE].dtype, device=device)
+                            th.zeros(
+                                (diff, ), dtype=self.tdata[INDEGREE].dtype, device=device)
                         ],
                         dim=0
                     )
@@ -378,7 +389,8 @@ class EdgeSeq:
                     self.tdata[OUTDEGREE] = th.cat(
                         [
                             self.tdata[OUTDEGREE],
-                            th.zeros((diff, ), dtype=self.tdata[OUTDEGREE].dtype, device=device)
+                            th.zeros(
+                                (diff, ), dtype=self.tdata[OUTDEGREE].dtype, device=device)
                         ],
                         dim=0
                     )
@@ -402,8 +414,10 @@ class EdgeSeq:
                     if data is not None and k in data:
                         y = data[k]
                     else:
-                        y = th.zeros((1, ) + tdata_schema[k][0], dtype=tdata_schema[k][1], device=device)
-                self.tdata[k] = th.cat([self.tdata[k][:idx], y, self.tdata[k][idx:]], dim=0)
+                        y = th.zeros(
+                            (1, ) + tdata_schema[k][0], dtype=tdata_schema[k][1], device=device)
+                self.tdata[k] = th.cat(
+                    [self.tdata[k][:idx], y, self.tdata[k][idx:]], dim=0)
             if data is not None:
                 for k in data:
                     if k not in self.tdata:
@@ -413,7 +427,8 @@ class EdgeSeq:
                             [
                                 th.zeros((idx, ) + size, dtype=data[k].dtype),
                                 y,
-                                th.zeros((self._number_of_tuples-idx, ) + size, dtype=data[k].dtype)
+                                th.zeros((self._number_of_tuples-idx,
+                                          ) + size, dtype=data[k].dtype)
                             ]
                         )
         self._number_of_tuples += 1
@@ -434,28 +449,34 @@ class EdgeSeq:
 
             # update degrees
             if INDEGREE in self.tdata:
-                diff = max(x["u"].max().item(), x["v"].max().item()) + 1 - self.tdata[INDEGREE].size(0)
+                diff = max(x["u"].max().item(), x["v"].max().item()
+                           ) + 1 - self.tdata[INDEGREE].size(0)
                 if diff > 0:
                     self.tdata[INDEGREE] = th.cat(
                         [
                             self.tdata[INDEGREE],
-                            th.zeros((diff, ), dtype=self.tdata[INDEGREE].dtype, device=device)
+                            th.zeros(
+                                (diff, ), dtype=self.tdata[INDEGREE].dtype, device=device)
                         ],
                         dim=0
                     )
-                self.tdata[INDEGREE] += th.bincount(x["v"], minlength=self.tdata[INDEGREE].size(0))
+                self.tdata[INDEGREE] += th.bincount(
+                    x["v"], minlength=self.tdata[INDEGREE].size(0))
 
             if OUTDEGREE in self.tdata:
-                diff = max(x["u"].max().item(), x["v"].max().item()) + 1 - self.tdata[OUTDEGREE].size(0)
+                diff = max(x["u"].max().item(), x["v"].max().item()
+                           ) + 1 - self.tdata[OUTDEGREE].size(0)
                 if diff > 0:
                     self.tdata[OUTDEGREE] = th.cat(
                         [
                             self.tdata[OUTDEGREE],
-                            th.zeros((diff, ), dtype=self.tdata[OUTDEGREE].dtype, device=device)
+                            th.zeros(
+                                (diff, ), dtype=self.tdata[OUTDEGREE].dtype, device=device)
                         ],
                         dim=0
                     )
-                self.tdata[OUTDEGREE] += th.bincount(x["u"], minlength=self.tdata[OUTDEGREE].size(0))
+                self.tdata[OUTDEGREE] += th.bincount(
+                    x["u"], minlength=self.tdata[OUTDEGREE].size(0))
 
             num_new_tuples = x["u"].size(0)
             tdata_schema = self.get_tdata_schemes()
@@ -468,7 +489,8 @@ class EdgeSeq:
                     if data is not None and k in data:
                         y = data[k]
                     else:
-                        y = th.zeros((num_new_tuples, ) + tdata_schema[k][0], dtype=tdata_schema[k][1], device=device)
+                        y = th.zeros(
+                            (num_new_tuples, ) + tdata_schema[k][0], dtype=tdata_schema[k][1], device=device)
                 self.tdata[k] = th.cat([self.tdata[k], y], dim=0)
             if data is not None:
                 for k in data:
@@ -477,12 +499,14 @@ class EdgeSeq:
                         size = tuple(data[k].size())[1:]
                         self.tdata[k] = th.cat(
                             [
-                                th.zeros((self._number_of_tuples, ) + size, dtype=data[k].dtype),
+                                th.zeros((self._number_of_tuples, ) +
+                                         size, dtype=data[k].dtype),
                                 y
                             ]
                         )
 
-            idx = th.stack([self.tdata["u"], self.tdata["v"], self.tdata["el"]], dim=-1).cpu().numpy()
+            idx = th.stack([self.tdata["u"], self.tdata["v"],
+                           self.tdata["el"]], dim=-1).cpu().numpy()
             idx = idx.view(
                 [("u", idx.dtype), ("v", idx.dtype), ("el", idx.dtype)]
             ).argsort(axis=0, order=["u", "v", "el"]).squeeze(-1)
@@ -516,9 +540,11 @@ class EdgeSeq:
                 nlabels = graph.ndata[NODELABEL]
                 elabels = graph.edata[EDGELABEL]
                 uid, vid, eid = graph.all_edges(form="all", order="srcdst")
-                code = th.stack([nids[uid], nids[vid], nlabels[uid], elabels[eid], nlabels[vid]], dim=-1).numpy()
+                code = th.stack([nids[uid], nids[vid], nlabels[uid],
+                                elabels[eid], nlabels[vid]], dim=-1).numpy()
                 code.view(
-                    [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype), ("el", code.dtype), ("vl", code.dtype)]
+                    [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype),
+                     ("el", code.dtype), ("vl", code.dtype)]
                 ).sort(axis=0, order=["u", "v", "ul", "el", "vl"])
 
                 return EdgeSeq(code)
@@ -533,9 +559,11 @@ class EdgeSeq:
                 nlabels = graph.ndata[NODELABEL]
                 elabels = graph.edata[EDGELABEL]
                 uid, vid, eid = graph.all_edges(form="all", order="srcdst")
-                code = th.stack([nids[uid], nids[vid], nlabels[uid], elabels[eid], nlabels[vid]], dim=-1).numpy()
+                code = th.stack([nids[uid], nids[vid], nlabels[uid],
+                                elabels[eid], nlabels[vid]], dim=-1).numpy()
                 code.view(
-                    [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype), ("el", code.dtype), ("vl", code.dtype)]
+                    [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype),
+                     ("el", code.dtype), ("vl", code.dtype)]
                 ).sort(axis=0, order=["u", "v", "ul", "el", "vl"])
 
                 return EdgeSeq(code)
@@ -546,10 +574,12 @@ class EdgeSeq:
             code = list()
             for edge in graph.es:
                 v, u = edge.tuple
-                code.append((vids[v], vids[u], vlabels[v], edge[EDGELABEL], vlabels[u]))
+                code.append((vids[v], vids[u], vlabels[v],
+                            edge[EDGELABEL], vlabels[u]))
             code = np.array(code, dtype=np.int64)
             code.view(
-                [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype), ("el", code.dtype), ("vl", code.dtype)]
+                [("u", code.dtype), ("v", code.dtype), ("ul", code.dtype),
+                 ("el", code.dtype), ("vl", code.dtype)]
             ).sort(axis=0, order=["u", "v", "ul", "el", "vl"])
 
             return EdgeSeq(code)
@@ -559,12 +589,15 @@ class EdgeSeq:
 
     def to_graph(self):
         if self._batch_num_tuples is None:
-            nid2nlabel = dict(zip(self.tdata["u"].numpy(), self.tdata["ul"].numpy()))
-            nid2nlabel.update(dict(zip(self.tdata["v"].numpy(), self.tdata["vl"].numpy())))
+            nid2nlabel = dict(
+                zip(self.tdata["u"].numpy(), self.tdata["ul"].numpy()))
+            nid2nlabel.update(
+                dict(zip(self.tdata["v"].numpy(), self.tdata["vl"].numpy())))
             num_nodes = len(nid2nlabel)
             nidx2nid = list(nid2nlabel.keys())
             nid2nidx = dict(zip(nidx2nid, range(num_nodes)))
-            eidx2elabel = dict(zip(range(self._number_of_tuples), self.tdata["el"].numpy()))
+            eidx2elabel = dict(
+                zip(range(self._number_of_tuples), self.tdata["el"].numpy()))
             num_edges = len(eidx2elabel)
             graph = Graph()
             graph.add_nodes(num_nodes)
@@ -576,8 +609,8 @@ class EdgeSeq:
             )
             graph.edata[EDGEID] = th.LongTensor(list(eidx2elabel.keys()))
             graph.edata[EDGELABEL] = th.LongTensor(list(eidx2elabel.values()))
-            same = (((th.roll(self.tdata["u"], 1, 0) - self.tdata["u"]) == 0) & \
-                ((th.roll(self.tdata["v"], 1, 0) - self.tdata["v"]) == 0))
+            same = (((th.roll(self.tdata["u"], 1, 0) - self.tdata["u"]) == 0) &
+                    ((th.roll(self.tdata["v"], 1, 0) - self.tdata["v"]) == 0))
             key = th.zeros((len(eidx2elabel), ), dtype=th.long)
             while same.max().item():
                 key += same
@@ -595,7 +628,8 @@ class EdgeSeq:
             for i in range(self.batch_size):
                 num_tuples = self._batch_num_tuples[i]
                 nid2nlabel = dict(
-                    zip(self.tdata["u"][i, -num_tuples:].numpy(), self.tdata["ul"][i, -num_tuples:].numpy())
+                    zip(self.tdata["u"][i, -num_tuples:].numpy(),
+                        self.tdata["ul"][i, -num_tuples:].numpy())
                 )
                 nid2nlabel.update(dict(
                     zip(self.tdata["v"][i, -num_tuples:].numpy(), self.tdata["vl"][i, -num_tuples:].numpy()))
@@ -603,20 +637,25 @@ class EdgeSeq:
                 num_nodes = len(nid2nlabel)
                 nidx2nid = list(nid2nlabel.keys())
                 nid2nidx = dict(zip(nidx2nid, range(num_nodes)))
-                eidx2elabel = dict(zip(range(num_tuples), self.tdata["el"][i, -num_tuples:].numpy()))
+                eidx2elabel = dict(
+                    zip(range(num_tuples), self.tdata["el"][i, -num_tuples:].numpy()))
                 num_edges = len(eidx2elabel)
                 graph = Graph()
                 graph.add_nodes(num_nodes)
                 graph.ndata[NODEID] = th.LongTensor(list(nid2nlabel.keys()))
-                graph.ndata[NODELABEL] = th.LongTensor(list(nid2nlabel.values()))
+                graph.ndata[NODELABEL] = th.LongTensor(
+                    list(nid2nlabel.values()))
                 graph.add_edges(
-                    th.tensor([nid2nidx[u] for u in self.tdata["u"][i, -num_tuples:].numpy()]),
-                    th.tensor([nid2nidx[v] for v in self.tdata["v"][i, -num_tuples:].numpy()])
+                    th.tensor([nid2nidx[u]
+                              for u in self.tdata["u"][i, -num_tuples:].numpy()]),
+                    th.tensor([nid2nidx[v]
+                              for v in self.tdata["v"][i, -num_tuples:].numpy()])
                 )
                 graph.edata[EDGEID] = th.LongTensor(list(eidx2elabel.keys()))
-                graph.edata[EDGELABEL] = th.LongTensor(list(eidx2elabel.values()))
-                same = (((th.roll(self.tdata["u"][i, -num_tuples:], 1, 0) - self.tdata["u"][i, -num_tuples:]) == 0) & \
-                    ((th.roll(self.tdata["v"][i, -num_tuples:], 1, 0) - self.tdata["v"][i, -num_tuples:]) == 0))
+                graph.edata[EDGELABEL] = th.LongTensor(
+                    list(eidx2elabel.values()))
+                same = (((th.roll(self.tdata["u"][i, -num_tuples:], 1, 0) - self.tdata["u"][i, -num_tuples:]) == 0) &
+                        ((th.roll(self.tdata["v"][i, -num_tuples:], 1, 0) - self.tdata["v"][i, -num_tuples:]) == 0))
                 key = th.zeros((len(eidx2elabel), ), dtype=th.long)
                 while same.max().item():
                     key += same
@@ -663,7 +702,8 @@ class EdgeSeq:
         padded_len = _batch_num_tuples.max().item()
         _batch_num_tuples = _batch_num_tuples
         for k, v in tdata_schemes.items():
-            batch.tdata[k] = th.zeros((_batch_num_tuples.size(0), padded_len) + v[0], dtype=v[1])
+            batch.tdata[k] = th.zeros(
+                (_batch_num_tuples.size(0), padded_len) + v[0], dtype=v[1])
         idx = 0
         if pre_pad:
             for x in data:
@@ -682,7 +722,8 @@ class EdgeSeq:
                                 continue
                             x_len = x.tdata[k].shape[1]
                             if x_len > 0 and k in x.tdata:
-                                batch.tdata[k][idx, -x_len:].data.copy_(x.tdata[k][i])
+                                batch.tdata[k][idx, -
+                                               x_len:].data.copy_(x.tdata[k][i])
                         idx += 1
         else:
             for x in data:
@@ -701,7 +742,8 @@ class EdgeSeq:
                                 continue
                             x_len = x.tdata[k].shape[1]
                             if x_len > 0 and k in x.tdata:
-                                batch.tdata[k][idx, :x_len].data.copy_(x.tdata[k][i])
+                                batch.tdata[k][idx, :x_len].data.copy_(
+                                    x.tdata[k][i])
                         idx += 1
         batch._number_of_tuples = _batch_num_tuples.sum().item()
         batch._batch_num_tuples = _batch_num_tuples.tolist()
@@ -763,14 +805,15 @@ class EdgeSeq:
 
     def __repr__(self):
         tdata_schemes = self.get_tdata_schemes()
-        tdata_schemes = ["{}: Scheme(shape={}, dtype={})".format(k, *v) for k, v in tdata_schemes.items()]
+        tdata_schemes = ["{}: Scheme(shape={}, dtype={})".format(
+            k, *v) for k, v in tdata_schemes.items()]
         return "EdgeSeq(num_tuples={},\n        tdata_schemes={})".format(
             self._number_of_tuples, "{" + ", ".join(tdata_schemes) + "}"
         )
 
 
 class EdgeSeqDataset(Dataset):
-    def __init__(self, data=None, cache=None, num_workers=1, share_memory=False):
+    def __init__(self, data=None, cache=None, num_workers=1, share_memory=False, graph_dir="./"):
         super(EdgeSeqDataset, self).__init__()
 
         if num_workers <= 0:
@@ -783,10 +826,27 @@ class EdgeSeqDataset(Dataset):
         else:
             self.data = list()
 
+        self.graph_dir = graph_dir
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
+        if isinstance(self.data[idx], str):
+            x = dict()
+            with open(os.path.join(self.graph_dir, self.data[idx]), "rb") as f:
+                pattern, graph, mapping = pickle.load(f)
+                x["id"] = self.data[idx]
+                x["pattern"] = ig.Graph.from_networkx(pattern)
+                x["graph"] = ig.Graph.from_networkx(graph)
+                if len(mapping) > 0:
+                    x["subisomorphisms"] = np.expand_dims(
+                        np.array(mapping).T[1], 0)
+                else:
+                    x["subisomorphisms"] = np.array([])
+                x["counts"] = 1
+            return x
+
         return self.data[idx]
 
     def save(self, filename):
@@ -797,7 +857,8 @@ class EdgeSeqDataset(Dataset):
                     cache[k].append(x.pop(k))
         with open(filename, "wb") as f:
             try:
-                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL, _use_new_zipfile_serialization=False)
+                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL,
+                        _use_new_zipfile_serialization=False)
             except TypeError:
                 th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL)
         if len(cache) > 0:
@@ -871,7 +932,8 @@ class EdgeSeqDataset(Dataset):
                 with Pool(num_workers) as pool:
                     pool_results = []
                     for x in data:
-                        pool_results.append(pool.apply_async(EdgeSeqDataset.preprocess, args=(x, cache)))
+                        pool_results.append(pool.apply_async(
+                            EdgeSeqDataset.preprocess, args=(x, cache)))
                     pool.close()
 
                 if use_tqdm:
@@ -883,12 +945,14 @@ class EdgeSeqDataset(Dataset):
 
     @staticmethod
     def calculate_node_weights(x):
-        g_ids = set(x["graph"].tdata["u"].numpy()) | set(x["graph"].tdata["v"].numpy())
+        g_ids = set(x["graph"].tdata["u"].numpy()) | set(
+            x["graph"].tdata["v"].numpy())
         if x["counts"] == 0:
             node_weights = th.zeros((len(g_ids), ), dtype=th.long)
         else:
             node_weights = th.from_numpy(
-                compute_nodeseq_subisoweights(len(g_ids), x["subisomorphisms"].numpy())
+                compute_nodeseq_subisoweights(
+                    len(g_ids), x["subisomorphisms"].numpy())
             )
 
         return node_weights
@@ -896,9 +960,11 @@ class EdgeSeqDataset(Dataset):
     @staticmethod
     def calculate_edge_weights(x):
         if x["counts"] == 0:
-            edge_weights = th.zeros((x["graph"].number_of_tuples(), ), dtype=th.long)
+            edge_weights = th.zeros(
+                (x["graph"].number_of_tuples(), ), dtype=th.long)
         else:
-            p_u, p_v = x["pattern"].tdata["u"].numpy(), x["pattern"].tdata["v"].numpy()
+            p_u, p_v = x["pattern"].tdata["u"].numpy(
+            ), x["pattern"].tdata["v"].numpy()
             p_ids = set(p_u)
             p_ids.update(p_v)
             p_id2idx = np.zeros((max(p_ids) + 1,), dtype=np.int64)
@@ -907,7 +973,8 @@ class EdgeSeqDataset(Dataset):
                 p_id2idx[j] = i
             p_u, p_v = p_id2idx[p_u], p_id2idx[p_v]
 
-            g_u, g_v = x["graph"].tdata["u"].numpy(), x["graph"].tdata["v"].numpy()
+            g_u, g_v = x["graph"].tdata["u"].numpy(
+            ), x["graph"].tdata["v"].numpy()
             g_ids = set(g_u)
             g_ids.update(g_v)
             g_id2idx = np.zeros((max(g_ids) + 1,), dtype=np.int64)
@@ -963,7 +1030,8 @@ class EdgeSeqDataset(Dataset):
                 cache[g_id] = x["graph"]
 
         if "_edge_weights" in x and x["_edge_weights"].size(0) < x["graph"].number_of_tuples():
-            new_edge_weights = th.zeros((x["graph"].number_of_tuples(),), dtype=th.long)
+            new_edge_weights = th.zeros(
+                (x["graph"].number_of_tuples(),), dtype=th.long)
             if x["counts"] > 0:
                 g_u, g_v = x["graph"].tdata["u"], x["graph"].tdata["v"]
                 g_el = x["graph"].tdata["el"]
@@ -973,7 +1041,8 @@ class EdgeSeqDataset(Dataset):
                 for u, v, el, ew in zip(g_u[ogn_mask].numpy(), g_v[ogn_mask].numpy(), g_el[ogn_mask].numpy(), x["_edge_weights"].numpy()):
                     edge_weight_mapping[(u, v, el)] = ew
                     edge_weight_mapping[(v, u, el + max_ngel)] = ew
-                new_edge_weights = th.tensor([edge_weight_mapping[k] for k in zip(g_u.numpy(), g_v.numpy(), g_el.numpy())], dtype=th.long)
+                new_edge_weights = th.tensor([edge_weight_mapping[k] for k in zip(
+                    g_u.numpy(), g_v.numpy(), g_el.numpy())], dtype=th.long)
             x["_edge_weights"] = new_edge_weights
         return x
 
@@ -995,7 +1064,8 @@ class EdgeSeqDataset(Dataset):
                 if use_tqdm:
                     data = tqdm(data)
                 for x in data:
-                    d.append(EdgeSeqDataset.add_reversed_edges(x, max_npe, max_npel, max_nge, max_ngel, cache))
+                    d.append(EdgeSeqDataset.add_reversed_edges(
+                        x, max_npe, max_npel, max_nge, max_ngel, cache))
             else:
                 with Pool(num_workers) as pool:
                     pool_results = []
@@ -1003,7 +1073,8 @@ class EdgeSeqDataset(Dataset):
                         pool_results.append(
                             pool.apply_async(
                                 EdgeSeqDataset.add_reversed_edges,
-                                args=(x, max_npe, max_npel, max_nge, max_ngel, cache)
+                                args=(x, max_npe, max_npel,
+                                      max_nge, max_ngel, cache)
                             )
                         )
                     pool.close()
@@ -1020,8 +1091,10 @@ class EdgeSeqDataset(Dataset):
         bsz = len(batch)
 
         _id = [x["id"] for x in batch]
-        pattern = EdgeSeq.batch([EdgeSeq(x["pattern"]) for x in batch], pre_pad=True)
-        graph = EdgeSeq.batch([EdgeSeq(x["graph"]) for x in batch], pre_pad=True)
+        pattern = EdgeSeq.batch([EdgeSeq(x["pattern"])
+                                for x in batch], pre_pad=True)
+        graph = EdgeSeq.batch([EdgeSeq(x["graph"])
+                              for x in batch], pre_pad=True)
         counts = th.tensor([x["counts"] for x in batch], dtype=th.int64)
 
         node_weights, edge_weights = None, None
@@ -1035,17 +1108,21 @@ class EdgeSeqDataset(Dataset):
             node_weights = list()
             for x in batch:
                 if "_node_weights" not in x:
-                    x["_node_weights"] = EdgeSeqDataset.calculate_node_weights(x)
+                    x["_node_weights"] = EdgeSeqDataset.calculate_node_weights(
+                        x)
                 node_weights.append(x["_node_weights"])
-            node_weights = batch_convert_tensor_to_tensor(node_weights, pre_pad=True)
+            node_weights = batch_convert_tensor_to_tensor(
+                node_weights, pre_pad=True)
 
         if "edge" in return_weights:
             edge_weights = list()
             for x in batch:
                 if "_edge_weights" not in x:
-                    x["_edge_weights"] = EdgeSeqDataset.calculate_edge_weights(x)
+                    x["_edge_weights"] = EdgeSeqDataset.calculate_edge_weights(
+                        x)
                 edge_weights.append(x["_edge_weights"])
-            edge_weights = batch_convert_tensor_to_tensor(edge_weights, pre_pad=True)
+            edge_weights = batch_convert_tensor_to_tensor(
+                edge_weights, pre_pad=True)
 
         return _id, pattern, graph, counts, (node_weights, edge_weights)
 
@@ -1074,14 +1151,18 @@ class Graph(dgl.DGLGraph):
                 )
 
                 if NODEID not in graph.ndata:
-                    self.ndata[NODEID] = th.cat([th.arange(n) for n in self.batch_num_nodes()])
+                    self.ndata[NODEID] = th.cat(
+                        [th.arange(n) for n in self.batch_num_nodes()])
                 if NODELABEL not in graph.ndata:
-                    self.ndata[NODELABEL] = th.zeros((self.number_of_nodes(), ), dtype=th.long)
+                    self.ndata[NODELABEL] = th.zeros(
+                        (self.number_of_nodes(), ), dtype=th.long)
 
                 if EDGEID not in graph.edata:
-                    self.edata[EDGEID] = th.cat([th.arange(n) for n in self.batch_num_edges()])
+                    self.edata[EDGEID] = th.cat(
+                        [th.arange(n) for n in self.batch_num_edges()])
                 if EDGELABEL not in graph.edata:
-                    self.edata[EDGELABEL] = th.zeros((self.number_of_edges(), ), dtype=th.long)
+                    self.edata[EDGELABEL] = th.zeros(
+                        (self.number_of_edges(), ), dtype=th.long)
 
             elif class_name == "<class 'dgl.heterograph_index.HeteroGraphIndex'>":
                 super(Graph, self).__init__(graph, *args, multigraph=True)
@@ -1089,11 +1170,13 @@ class Graph(dgl.DGLGraph):
                 if NODEID not in self.ndata:
                     self.ndata[NODEID] = th.arange(self.number_of_nodes())
                 if NODELABEL not in self.ndata:
-                    self.ndata[NODELABEL] = th.zeros((self.number_of_nodes(), ), dtype=th.long)
+                    self.ndata[NODELABEL] = th.zeros(
+                        (self.number_of_nodes(), ), dtype=th.long)
                 if EDGEID not in self.edata:
                     self.edata[EDGEID] = th.arange(self.number_of_edges())
                 if EDGELABEL not in self.edata:
-                    self.edata[EDGELABEL] = th.zeros((self.number_of_edges(), ), dtype=th.long)
+                    self.edata[EDGELABEL] = th.zeros(
+                        (self.number_of_edges(), ), dtype=th.long)
 
             elif class_name == "<class 'igraph.Graph'>":
                 super(Graph, self).__init__(multigraph=True)
@@ -1115,7 +1198,8 @@ class Graph(dgl.DGLGraph):
                 if NODEID not in self.ndata:
                     self.ndata[NODEID] = th.arange(self.number_of_nodes())
                 if NODELABEL not in self.ndata:
-                    self.ndata[NODELABEL] = th.zeros((self.number_of_nodes(), ), dtype=th.long)
+                    self.ndata[NODELABEL] = th.zeros(
+                        (self.number_of_nodes(), ), dtype=th.long)
 
                 for k in graph.edge_attributes():
                     v = graph.es[k]
@@ -1128,7 +1212,8 @@ class Graph(dgl.DGLGraph):
                 if NODEID not in self.edata:
                     self.edata[EDGEID] = th.arange(self.number_of_edges())
                 if NODELABEL not in self.edata:
-                    self.edata[EDGELABEL] = th.zeros((self.number_of_edges(), ), dtype=th.long)
+                    self.edata[EDGELABEL] = th.zeros(
+                        (self.number_of_edges(), ), dtype=th.long)
 
             else:
                 raise ValueError
@@ -1287,10 +1372,12 @@ class Graph(dgl.DGLGraph):
             data[EDGEID] = th.arange(num_edges, num_edges + num_new_edges)
         super(Graph, self).add_edges(u, v, **kw)
         if INDEGREE in self.ndata:
-            self.ndata[INDEGREE] += th.bincount(v, minlength=self.ndata[INDEGREE].size(0))
+            self.ndata[INDEGREE] += th.bincount(v,
+                                                minlength=self.ndata[INDEGREE].size(0))
 
         if OUTDEGREE in self.ndata:
-            self.ndata[OUTDEGREE] += th.bincount(u, minlength=self.ndata[OUTDEGREE].size(0))
+            self.ndata[OUTDEGREE] += th.bincount(u,
+                                                 minlength=self.ndata[OUTDEGREE].size(0))
 
     def __len__(self):
         return self.number_of_nodes()
@@ -1363,18 +1450,21 @@ class Graph(dgl.DGLGraph):
 
     def __repr__(self):
         ndata_schemes = self.get_ndata_schemes()
-        ndata_schemes = ["{}: Scheme(shape={}, dtype={})".format(k, *v) for k, v in ndata_schemes.items()]
+        ndata_schemes = ["{}: Scheme(shape={}, dtype={})".format(
+            k, *v) for k, v in ndata_schemes.items()]
         edata_schemes = self.get_edata_schemes()
-        edata_schemes = ["{}: Scheme(shape={}, dtype={})".format(k, *v) for k, v in edata_schemes.items()]
+        edata_schemes = ["{}: Scheme(shape={}, dtype={})".format(
+            k, *v) for k, v in edata_schemes.items()]
 
         return "Graph(num_nodes={}, num_edges={},\n      ndata_schemes={}\n      edata_schemes={}\n)".format(
-            self.number_of_nodes(), self.number_of_edges(), "{" + ", ".join(ndata_schemes) + "}",
+            self.number_of_nodes(), self.number_of_edges(
+            ), "{" + ", ".join(ndata_schemes) + "}",
             "{" + ", ".join(edata_schemes) + "}"
         )
 
 
 class GraphAdjDataset(Dataset):
-    def __init__(self, data=None, cache=None, num_workers=1, share_memory=False):
+    def __init__(self, data=None, cache=None, num_workers=1, share_memory=False, graph_dir="./"):
         super(GraphAdjDataset, self).__init__()
 
         if num_workers <= 0:
@@ -1387,10 +1477,27 @@ class GraphAdjDataset(Dataset):
         else:
             self.data = list()
 
+        self.graph_dir = graph_dir
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
+        if isinstance(self.data[idx], str):
+            x = dict()
+            with open(os.path.join(self.graph_dir, self.data[idx]), "rb") as f:
+                pattern, graph, mapping = pickle.load(f)
+                x["id"] = self.data[idx]
+                x["pattern"] = ig.Graph.from_networkx(pattern)
+                x["graph"] = ig.Graph.from_networkx(graph)
+                if len(mapping) > 0:
+                    x["subisomorphisms"] = np.expand_dims(
+                        np.array(mapping).T[1], 0)
+                else:
+                    x["subisomorphisms"] = np.array([])
+                x["counts"] = 1
+            return x
+
         return self.data[idx]
 
     def save(self, filename):
@@ -1401,7 +1508,8 @@ class GraphAdjDataset(Dataset):
                     cache[k].append(x.pop(k))
         with open(filename, "wb") as f:
             try:
-                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL, _use_new_zipfile_serialization=False)
+                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL,
+                        _use_new_zipfile_serialization=False)
             except TypeError:
                 th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -1478,7 +1586,8 @@ class GraphAdjDataset(Dataset):
                 with Pool(num_workers) as pool:
                     pool_results = []
                     for x in data:
-                        pool_results.append(pool.apply_async(GraphAdjDataset.preprocess, args=(x, cache)))
+                        pool_results.append(pool.apply_async(
+                            GraphAdjDataset.preprocess, args=(x, cache)))
                     pool.close()
 
                 if use_tqdm:
@@ -1491,10 +1600,12 @@ class GraphAdjDataset(Dataset):
     @staticmethod
     def calculate_node_weights(x):
         if x["counts"] == 0:
-            node_weights = th.zeros((x["graph"].number_of_nodes(),), dtype=th.long)
+            node_weights = th.zeros(
+                (x["graph"].number_of_nodes(),), dtype=th.long)
         else:
             node_weights = th.from_numpy(
-                compute_nodeseq_subisoweights(x["graph"].number_of_nodes(), x["subisomorphisms"].numpy())
+                compute_nodeseq_subisoweights(
+                    x["graph"].number_of_nodes(), x["subisomorphisms"].numpy())
             )
 
         return node_weights
@@ -1502,11 +1613,14 @@ class GraphAdjDataset(Dataset):
     @staticmethod
     def calculate_edge_weights(x):
         if x["counts"] == 0:
-            edge_weights = th.zeros((x["graph"].number_of_edges(),), dtype=th.long)
+            edge_weights = th.zeros(
+                (x["graph"].number_of_edges(),), dtype=th.long)
         else:
-            p_uid, p_vid, p_eid = x["pattern"].all_edges(form="all", order="eid")
+            p_uid, p_vid, p_eid = x["pattern"].all_edges(
+                form="all", order="eid")
             p_elabel = x["pattern"].edata[EDGELABEL][p_eid]
-            g_uid, g_vid, g_eid = x["graph"].all_edges(form="all", order="srcdst")
+            g_uid, g_vid, g_eid = x["graph"].all_edges(
+                form="all", order="srcdst")
             g_elabel = x["graph"].edata[EDGELABEL][g_eid]
             edge_weights = th.zeros(g_eid.size(0), dtype=th.long)
             edge_weights[g_eid] = th.from_numpy(
@@ -1580,7 +1694,8 @@ class GraphAdjDataset(Dataset):
                 if use_tqdm:
                     data = tqdm(data)
                 for x in data:
-                    d.append(GraphAdjDataset.add_reversed_edges(x, max_npe, max_npel, max_nge, max_ngel, cache))
+                    d.append(GraphAdjDataset.add_reversed_edges(
+                        x, max_npe, max_npel, max_nge, max_ngel, cache))
             else:
                 with Pool(num_workers) as pool:
                     pool_results = []
@@ -1588,7 +1703,8 @@ class GraphAdjDataset(Dataset):
                         pool_results.append(
                             pool.apply_async(
                                 GraphAdjDataset.add_reversed_edges,
-                                args=(x, max_npe, max_npel, max_nge, max_ngel, cache)
+                                args=(x, max_npe, max_npel,
+                                      max_nge, max_ngel, cache)
                             )
                         )
                     pool.close()
@@ -1599,7 +1715,6 @@ class GraphAdjDataset(Dataset):
                     d.append(x.get())
 
         return d
-
 
     @staticmethod
     def batchify(batch, return_weights=None, num_workers=1):
@@ -1621,17 +1736,21 @@ class GraphAdjDataset(Dataset):
             node_weights = list()
             for x in batch:
                 if "_node_weights" not in x:
-                    x["_node_weights"] = GraphAdjDataset.calculate_node_weights(x)
+                    x["_node_weights"] = GraphAdjDataset.calculate_node_weights(
+                        x)
                 node_weights.append(x["_node_weights"])
-            node_weights = batch_convert_tensor_to_tensor(node_weights, pre_pad=True)
+            node_weights = batch_convert_tensor_to_tensor(
+                node_weights, pre_pad=True)
 
         if "edge" in return_weights:
             edge_weights = list()
             for x in batch:
                 if "_edge_weights" not in x:
-                    x["_edge_weights"] = GraphAdjDataset.calculate_edge_weights(x)
+                    x["_edge_weights"] = GraphAdjDataset.calculate_edge_weights(
+                        x)
                 edge_weights.append(x["_edge_weights"])
-            edge_weights = batch_convert_tensor_to_tensor(edge_weights, pre_pad=True)
+            edge_weights = batch_convert_tensor_to_tensor(
+                edge_weights, pre_pad=True)
 
         return _id, pattern, graph, counts, (node_weights, edge_weights)
 
@@ -1639,7 +1758,7 @@ class GraphAdjDataset(Dataset):
 class LRPDataset(Dataset):
     seq_len = 4
 
-    def __init__(self, graphadj_dataset=None, cache=None, num_workers=1, share_memory=False):
+    def __init__(self, graphadj_dataset=None, cache=None, num_workers=1, share_memory=False, graph_dir='./'):
         super(LRPDataset, self).__init__()
 
         if num_workers <= 0:
@@ -1652,19 +1771,24 @@ class LRPDataset(Dataset):
                 graphadj_dataset, cache=cache, num_workers=num_workers, share_memory=share_memory, use_tqdm=True
             )
 
+        self.graph_dir = graph_dir
+
     @staticmethod
     def preprocess(x, cache=None):
         if cache is None:
-            pattern_lrp_egonet_seq = LRPDataset.graph_to_egonet_seq(x["pattern"])
+            pattern_lrp_egonet_seq = LRPDataset.graph_to_egonet_seq(
+                x["pattern"])
             graph_lrp_egonet_seq = LRPDataset.graph_to_egonet_seq(x["graph"])
         else:
             p_id, g_id = x["id"].split("-")
             pattern_lrp_egonet_seq = cache.get(p_id, None)
             if pattern_lrp_egonet_seq is None:
-                pattern_lrp_egonet_seq = cache[p_id] = LRPDataset.graph_to_egonet_seq(x["pattern"])
+                pattern_lrp_egonet_seq = cache[p_id] = LRPDataset.graph_to_egonet_seq(
+                    x["pattern"])
             graph_lrp_egonet_seq = cache.get(g_id, None)
             if graph_lrp_egonet_seq is None:
-                graph_lrp_egonet_seq = cache[g_id] = LRPDataset.graph_to_egonet_seq(x["graph"])
+                graph_lrp_egonet_seq = cache[g_id] = LRPDataset.graph_to_egonet_seq(
+                    x["graph"])
 
         x = {
             "id": x["id"],
@@ -1702,7 +1826,8 @@ class LRPDataset(Dataset):
                 with Pool(num_workers) as pool:
                     pool_results = []
                     for x in data:
-                        pool_results.append(pool.apply_async(LRPDataset.preprocess, args=(x, cache)))
+                        pool_results.append(pool.apply_async(
+                            LRPDataset.preprocess, args=(x, cache)))
                     pool.close()
 
                 if use_tqdm:
@@ -1728,7 +1853,8 @@ class LRPDataset(Dataset):
                     cache[k].append(x.pop(k))
         with open(filename, "wb") as f:
             try:
-                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL, _use_new_zipfile_serialization=False)
+                th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL,
+                        _use_new_zipfile_serialization=False)
             except TypeError:
                 th.save(self.data, f, pickle_protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -1739,6 +1865,20 @@ class LRPDataset(Dataset):
                     self.data[i][k] = cache[k][i]
 
     def __getitem__(self, idx):
+        if isinstance(self.data[idx], str):
+            x = dict()
+            with open(os.path.join(self.graph_dir, self.data[idx]), "rb") as f:
+                pattern, graph, mapping = pickle.load(f)
+                x["id"] = self.data[idx]
+                x["pattern"] = ig.Graph.from_networkx(pattern)
+                x["graph"] = ig.Graph.from_networkx(graph)
+                if len(mapping) > 0:
+                    x["subisomorphisms"] = np.expand_dims(
+                        np.array(mapping).T[1], 0)
+                else:
+                    x["subisomorphisms"] = np.array([])
+                x["counts"] = 1
+            return x
         return self.data[idx]
 
     def __len__(self):
@@ -1749,7 +1889,7 @@ class LRPDataset(Dataset):
 
     @staticmethod
     def generate_neighbour_perms(adj_m, start_node):
-        adjlist = adj_m.indices[adj_m.indptr[start_node]:adj_m.indptr[start_node+1]]
+        adjlist = adj_m.indices[adj_m.indptr[start_node]                                :adj_m.indptr[start_node+1]]
         nei_len = LRPDataset.seq_len - 1
         all_perm = permutations(adjlist, min(nei_len, len(adjlist)))
         # all_perm = combinations(adjlist, min(nei_len, len(adjlist)))
@@ -1758,7 +1898,8 @@ class LRPDataset(Dataset):
     @staticmethod
     def convert_seq_to_ind(eid_map, perm):
         dim_dict = {node: i for i, node in enumerate(perm)}
-        node_to_perm_row = np.arange(len(perm), dtype=np.int16) * (1 + LRPDataset.seq_len)
+        node_to_perm_row = np.arange(
+            len(perm), dtype=np.int16) * (1 + LRPDataset.seq_len)
         node_to_perm_col = np.array(perm, dtype=np.int16)
         src = np.repeat(perm, len(perm))
         dst = np.tile(perm, len(perm))
@@ -1768,7 +1909,8 @@ class LRPDataset(Dataset):
         edge_to_perm_col = []
         for uv in zip(src, dst):
             if uv in eid_map:
-                edge_to_perm_row.append(dim_dict[uv[0]] * LRPDataset.seq_len + dim_dict[uv[1]])
+                edge_to_perm_row.append(
+                    dim_dict[uv[0]] * LRPDataset.seq_len + dim_dict[uv[1]])
                 edge_to_perm_col.append(eid_map[uv])
         edge_to_perm_row = np.array(edge_to_perm_row, dtype=np.int16)
         edge_to_perm_col = np.array(edge_to_perm_col, dtype=np.int16)
@@ -1792,17 +1934,20 @@ class LRPDataset(Dataset):
         eid_map = {(u, v): e for u, v, e in zip(src, dst, eid)}
         for i in range(num_of_nodes):
             perms = LRPDataset.generate_neighbour_perms(adj_m, start_node=i)
-            egonet_seq = tuple(LRPDataset.convert_seq_to_ind(eid_map, perm) for perm in perms)
+            egonet_seq = tuple(LRPDataset.convert_seq_to_ind(
+                eid_map, perm) for perm in perms)
             egonet_seq_graph.append(egonet_seq)
         return tuple(egonet_seq_graph)
 
     @staticmethod
     def build_perm_pooling_matrix(split_list, pooling="sum"):
         dim0, dim1 = split_list.shape[0], split_list.sum()
-        row = np.concatenate([np.repeat(np.int64(i), c) for i, c in enumerate(split_list)])
+        row = np.concatenate([np.repeat(np.int64(i), c)
+                             for i, c in enumerate(split_list)])
         col = np.arange(dim1, dtype=np.int64)
         if pooling == "mean":
-            data = th.cat([(th.tensor([1.0], dtype=th.float32)/c).repeat(c) for i, c in enumerate(split_list)])
+            data = th.cat([(th.tensor([1.0], dtype=th.float32)/c).repeat(c)
+                          for i, c in enumerate(split_list)])
         else:
             data = th.ones((dim1,), dtype=th.float32)
         pooling_matrix = tsp.FloatTensor(
@@ -1815,8 +1960,10 @@ class LRPDataset(Dataset):
 
     @staticmethod
     def build_batch_graph_to_perm_matrices(graphs, lrp_egonet):
-        batch_num_nodes = np.array([g.number_of_nodes() for g in graphs], dtype=np.int64)
-        batch_num_edges = np.array([g.number_of_edges() for g in graphs], dtype=np.int64)
+        batch_num_nodes = np.array([g.number_of_nodes()
+                                   for g in graphs], dtype=np.int64)
+        batch_num_edges = np.array([g.number_of_edges()
+                                   for g in graphs], dtype=np.int64)
 
         node_to_perm_row = []
         node_to_perm_col = []
@@ -1830,10 +1977,14 @@ class LRPDataset(Dataset):
         for i, g_egonet in enumerate(lrp_egonet):
             for n_egonet in g_egonet:
                 for perm_ind in n_egonet:
-                    node_to_perm_row.append(perm_ind[0].astype(np.int64) + sum_row_number)
-                    node_to_perm_col.append(perm_ind[1].astype(np.int64) + sum_ncol_number)
-                    edge_to_perm_row.append(perm_ind[2].astype(np.int64) + sum_row_number)
-                    edge_to_perm_col.append(perm_ind[3].astype(np.int64) + sum_ecol_number)
+                    node_to_perm_row.append(
+                        perm_ind[0].astype(np.int64) + sum_row_number)
+                    node_to_perm_col.append(
+                        perm_ind[1].astype(np.int64) + sum_ncol_number)
+                    edge_to_perm_row.append(
+                        perm_ind[2].astype(np.int64) + sum_row_number)
+                    edge_to_perm_col.append(
+                        perm_ind[3].astype(np.int64) + sum_ecol_number)
                     sum_row_number += out_len
             sum_ncol_number += batch_num_nodes[i]
             sum_ecol_number += batch_num_edges[i]
@@ -1848,12 +1999,14 @@ class LRPDataset(Dataset):
         edim1 = batch_num_edges.sum()
 
         node_to_perm_matrix = tsp.FloatTensor(
-            th.stack([th.from_numpy(node_to_perm_row), th.from_numpy(node_to_perm_col)]),
+            th.stack([th.from_numpy(node_to_perm_row),
+                     th.from_numpy(node_to_perm_col)]),
             th.ones((len(node_to_perm_row)), dtype=th.float32),
             size=(ndim0, ndim1)
         )
         edge_to_perm_matrix = tsp.FloatTensor(
-            th.stack([th.from_numpy(edge_to_perm_row), th.from_numpy(edge_to_perm_col)]),
+            th.stack([th.from_numpy(edge_to_perm_row),
+                     th.from_numpy(edge_to_perm_col)]),
             th.ones((len(edge_to_perm_row)), dtype=th.float32),
             size=(edim0, edim1)
         )
@@ -1868,12 +2021,18 @@ class LRPDataset(Dataset):
         graph_lrp_egonet_seq = [x["graph_lrp_egonet_seq"] for x in batch]
         counts = th.tensor([x["counts"] for x in batch], dtype=th.int64)
 
-        p_split_list = np.asarray([len(node) for seq in pattern_lrp_egonet_seq for node in seq], dtype=np.int64)
-        p_perm_pool = LRPDataset.build_perm_pooling_matrix(p_split_list, "mean")
-        pattern_to_perm_matrices = LRPDataset.build_batch_graph_to_perm_matrices(pattern, pattern_lrp_egonet_seq)
-        g_split_list = np.asarray([len(node) for seq in graph_lrp_egonet_seq for node in seq], dtype=np.int64)
-        g_perm_pool = LRPDataset.build_perm_pooling_matrix(g_split_list, "mean")
-        graph_to_perm_matrices = LRPDataset.build_batch_graph_to_perm_matrices(graph, graph_lrp_egonet_seq)
+        p_split_list = np.asarray(
+            [len(node) for seq in pattern_lrp_egonet_seq for node in seq], dtype=np.int64)
+        p_perm_pool = LRPDataset.build_perm_pooling_matrix(
+            p_split_list, "mean")
+        pattern_to_perm_matrices = LRPDataset.build_batch_graph_to_perm_matrices(
+            pattern, pattern_lrp_egonet_seq)
+        g_split_list = np.asarray(
+            [len(node) for seq in graph_lrp_egonet_seq for node in seq], dtype=np.int64)
+        g_perm_pool = LRPDataset.build_perm_pooling_matrix(
+            g_split_list, "mean")
+        graph_to_perm_matrices = LRPDataset.build_batch_graph_to_perm_matrices(
+            graph, graph_lrp_egonet_seq)
 
         pattern = dgl.batch(pattern)
         graph = dgl.batch(graph)
@@ -1885,18 +2044,22 @@ class LRPDataset(Dataset):
             node_weights = list()
             for x in batch:
                 if "_node_weights" not in x:
-                    x["_node_weights"] = GraphAdjDataset.calculate_node_weights(x)
+                    x["_node_weights"] = GraphAdjDataset.calculate_node_weights(
+                        x)
                 node_weights.append(x["_node_weights"])
-            node_weights = batch_convert_tensor_to_tensor(node_weights, pre_pad=True)
+            node_weights = batch_convert_tensor_to_tensor(
+                node_weights, pre_pad=True)
         else:
             node_weights = None
         if "edge" in return_weights:
             edge_weights = list()
             for x in batch:
                 if "_edge_weights" not in x:
-                    x["_edge_weights"] = GraphAdjDataset.calculate_edge_weights(x)
+                    x["_edge_weights"] = GraphAdjDataset.calculate_edge_weights(
+                        x)
                 edge_weights.append(x["_edge_weights"])
-            edge_weights = batch_convert_tensor_to_tensor(edge_weights, pre_pad=True)
+            edge_weights = batch_convert_tensor_to_tensor(
+                edge_weights, pre_pad=True)
         else:
             edge_weights = None
 
