@@ -1494,6 +1494,22 @@ class GraphAdjDataset(Dataset):
                 else:
                     x["subisomorphisms"] = th.tensor([], dtype=th.int64)
                 x["counts"] = 1
+
+                x["g_len"] = len(x["graph"])
+                x["p_len"] = len(x["pattern"])
+
+                if NODEID not in x["graph"].ndata:
+                    x["graph"].ndata[NODEID] = th.arange(
+                        x["graph"].number_of_nodes())
+                if EDGEID not in x["graph"].edata:
+                    x["graph"].edata[EDGEID] = th.arange(
+                        x["graph"].number_of_edges())
+                if NODEID not in x["pattern"].ndata:
+                    x["pattern"].ndata[NODEID] = th.arange(
+                        x["pattern"].number_of_nodes())
+                if EDGEID not in x["pattern"].edata:
+                    x["pattern"].edata[EDGEID] = th.arange(
+                        x["pattern"].number_of_edges())
             return x
 
         return self.data[idx]

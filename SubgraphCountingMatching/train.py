@@ -1281,22 +1281,22 @@ if __name__ == "__main__":
             for x in datasets[data_type]:
                 x["g_len"] = len(x["graph"])
                 x["p_len"] = len(x["pattern"])
-        elif isinstance(datasets[data_type], GraphAdjDataset):
-            for x in datasets[data_type]:
-                x["g_len"] = len(x["graph"])
-                x["p_len"] = len(x["pattern"])
-                if NODEID not in x["graph"].ndata:
-                    x["graph"].ndata[NODEID] = th.arange(
-                        x["graph"].number_of_nodes())
-                if EDGEID not in x["graph"].edata:
-                    x["graph"].edata[EDGEID] = th.arange(
-                        x["graph"].number_of_edges())
-                if NODEID not in x["pattern"].ndata:
-                    x["pattern"].ndata[NODEID] = th.arange(
-                        x["pattern"].number_of_nodes())
-                if EDGEID not in x["pattern"].edata:
-                    x["pattern"].edata[EDGEID] = th.arange(
-                        x["pattern"].number_of_edges())
+        # elif isinstance(datasets[data_type], GraphAdjDataset):
+        #     for x in datasets[data_type]:
+        #         x["g_len"] = len(x["graph"])
+        #         x["p_len"] = len(x["pattern"])
+        #         if NODEID not in x["graph"].ndata:
+        #             x["graph"].ndata[NODEID] = th.arange(
+        #                 x["graph"].number_of_nodes())
+        #         if EDGEID not in x["graph"].edata:
+        #             x["graph"].edata[EDGEID] = th.arange(
+        #                 x["graph"].number_of_edges())
+        #         if NODEID not in x["pattern"].ndata:
+        #             x["pattern"].ndata[NODEID] = th.arange(
+        #                 x["pattern"].number_of_nodes())
+        #         if EDGEID not in x["pattern"].edata:
+        #             x["pattern"].edata[EDGEID] = th.arange(
+        #                 x["pattern"].number_of_edges())
 
     # add E reversed edges
     if config["add_rev"]:
