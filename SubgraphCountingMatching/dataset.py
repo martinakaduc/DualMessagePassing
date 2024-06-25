@@ -868,11 +868,12 @@ class EdgeSeqDataset(Dataset):
                 for k in keys:
                     self.data[i][k] = cache[k][i]
 
-    def load(self, filename):
+    def load(self, filename, graph_dir='./'):
         with open(filename, "rb") as f:
             data = th.load(f)
         del self.data
         self.data = data
+        self.graph_dir = graph_dir
 
         return self
 
@@ -1507,20 +1508,19 @@ class GraphAdjDataset(Dataset):
                     x["pattern"].number_of_nodes())
                 x["pattern"].edata[EDGEID] = th.arange(
                     x["pattern"].number_of_edges())
-                    
+
                 x["pattern"].ndata[INDEGREE] = x["pattern"].in_degrees()
                 x["pattern"].ndata[OUTDEGREE] = x["pattern"].out_degrees()
                 x["graph"].ndata[INDEGREE] = x["graph"].in_degrees()
                 x["graph"].ndata[OUTDEGREE] = x["graph"].out_degrees()
-                
-                
+
                 node_eigenv, edge_eigenv = compute_largest_eigenvalues(
                     x["pattern"])
                 x["pattern"].ndata[NODEEIGENV] = th.clamp_min(node_eigenv, 1.0).repeat(
                     x["pattern"].number_of_nodes()).unsqueeze(-1)
                 x["pattern"].edata[EDGEEIGENV] = th.clamp_min(edge_eigenv, 1.0).repeat(
                     x["pattern"].number_of_edges()).unsqueeze(-1)
-                
+
                 node_eigenv, edge_eigenv = compute_largest_eigenvalues(
                     x["graph"])
                 x["graph"].ndata[NODEEIGENV] = th.clamp_min(node_eigenv, 1.0).repeat(
@@ -1921,7 +1921,8 @@ class LRPDataset(Dataset):
 
     @staticmethod
     def generate_neighbour_perms(adj_m, start_node):
-        adjlist = adj_m.indices[adj_m.indptr[start_node]:adj_m.indptr[start_node+1]]
+        adjlist = adj_m.indices[adj_m.indptr[start_node]
+            :adj_m.indptr[start_node+1]]
         nei_len = LRPDataset.seq_len - 1
         all_perm = permutations(adjlist, min(nei_len, len(adjlist)))
         # all_perm = combinations(adjlist, min(nei_len, len(adjlist)))
