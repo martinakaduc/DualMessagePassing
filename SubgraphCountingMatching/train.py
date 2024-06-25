@@ -232,17 +232,17 @@ def load_graphadj_datasets(pattern_dir, graph_dir, metadata_dir, train_key, test
     ):
         datasets = OrderedDict()
         datasets["train"] = GraphAdjDataset().load(
-            os.path.join(save_data_dir, "train_graphadj_dataset.pt") graph_dir=graph_dir)
+            os.path.join(save_data_dir, "train_graphadj_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} training data have been loaded".format(
                 len(datasets["train"])))
         datasets["dev"] = GraphAdjDataset().load(
-            os.path.join(save_data_dir, "dev_graphadj_dataset.pt") graph_dir=graph_dir)
+            os.path.join(save_data_dir, "dev_graphadj_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} dev data have been loaded".format(
                 len(datasets["dev"])))
         datasets["test"] = GraphAdjDataset().load(
-            os.path.join(save_data_dir, "test_graphadj_dataset.pt") graph_dir=graph_dir)
+            os.path.join(save_data_dir, "test_graphadj_dataset.pt"), graph_dir=graph_dir)
         if logger:
             logger.info("{:8d} test data have been loaded".format(
                 len(datasets["test"])))
