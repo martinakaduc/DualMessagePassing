@@ -7,7 +7,8 @@ from collections import OrderedDict
 from dataclasses import fields
 from itertools import islice, chain
 from torch._jit_internal import _copy_to_script_wrapper
-from torch._six import container_abcs
+# from torch._six import container_abcs
+import collections.abc as container_abcs
 from torch.nn.modules.container import Container, Sequential, ModuleDict, ModuleList, ParameterDict, ParameterList
 
 
@@ -32,7 +33,8 @@ class OutputDict(OrderedDict):
         ), f"{self.__class__.__name__} should not have more than one required field."
 
         first_field = getattr(self, class_fields[0].name)
-        other_fields_are_none = all(getattr(self, field.name) is None for field in class_fields[1:])
+        other_fields_are_none = all(
+            getattr(self, field.name) is None for field in class_fields[1:])
 
         if other_fields_are_none and not isinstance(first_field, th.Tensor):
             try:
@@ -63,16 +65,20 @@ class OutputDict(OrderedDict):
                     self[field.name] = v
 
     def __delitem__(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``__delitem__`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``__delitem__`` on a {self.__class__.__name__} instance.")
 
     def setdefault(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``setdefault`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``setdefault`` on a {self.__class__.__name__} instance.")
 
     def pop(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``pop`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``pop`` on a {self.__class__.__name__} instance.")
 
     def update(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``update`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f"You cannot use ``update`` on a {self.__class__.__name__} instance.")
 
     def __getitem__(self, k):
         if isinstance(k, str):
@@ -151,7 +157,8 @@ class BufferDict(nn.Module):
         if not isinstance(buffers, container_abcs.Iterable):
             raise TypeError(
                 "BufferDict.update should be called with an "
-                "iterable of key/value pairs, but got " + type(buffers).__name__
+                "iterable of key/value pairs, but got " +
+                type(buffers).__name__
             )
 
         if isinstance(buffers, (OrderedDict, BufferDict)):
@@ -165,12 +172,14 @@ class BufferDict(nn.Module):
                 if not isinstance(p, container_abcs.Iterable):
                     raise TypeError(
                         "BufferDict update sequence element "
-                        "#" + str(j) + " should be Iterable; is" + type(p).__name__
+                        "#" + str(j) + " should be Iterable; is" +
+                        type(p).__name__
                     )
                 if not len(p) == 2:
                     raise ValueError(
                         "BufferDict update sequence element "
-                        "#" + str(j) + " has length " + str(len(p)) + "; 2 is required"
+                        "#" + str(j) + " has length " +
+                        str(len(p)) + "; 2 is required"
                     )
                 self[p[0]] = p[1]
 
@@ -178,8 +187,10 @@ class BufferDict(nn.Module):
         child_lines = []
         for k, p in self._buffers.items():
             size_str = 'x'.join(str(size) for size in p.size())
-            device_str = '' if not p.is_cuda else ' (GPU {})'.format(p.get_device())
-            parastr = 'Buffer containing: [{} of size {}{}]'.format(th.typename(p), size_str, device_str)
+            device_str = '' if not p.is_cuda else ' (GPU {})'.format(
+                p.get_device())
+            parastr = 'Buffer containing: [{} of size {}{}]'.format(
+                th.typename(p), size_str, device_str)
             child_lines.append('  (' + k + '): ' + parastr)
         tmpstr = '\n'.join(child_lines)
         return tmpstr
@@ -247,7 +258,8 @@ class BufferList(nn.Module):
 
     def extend(self, buffers):
         if not isinstance(buffers, container_abcs.Iterable):
-            raise TypeError("BufferList.extend should be called with an " "iterable, but got " + type(buffers).__name__)
+            raise TypeError(
+                "BufferList.extend should be called with an " "iterable, but got " + type(buffers).__name__)
         offset = len(self)
         for i, buffer in enumerate(buffers):
             self.register_buffer(str(offset + i), buffer)
@@ -257,8 +269,10 @@ class BufferList(nn.Module):
         child_lines = []
         for k, p in self._buffers.items():
             size_str = 'x'.join(str(size) for size in p.size())
-            device_str = '' if not p.is_cuda else ' (GPU {})'.format(p.get_device())
-            parastr = 'Buffer containing: [{} of size {}{}]'.format(th.typename(p), size_str, device_str)
+            device_str = '' if not p.is_cuda else ' (GPU {})'.format(
+                p.get_device())
+            parastr = 'Buffer containing: [{} of size {}{}]'.format(
+                th.typename(p), size_str, device_str)
             child_lines.append('  (' + str(k) + '): ' + parastr)
         tmpstr = '\n'.join(child_lines)
         return tmpstr
@@ -353,7 +367,8 @@ class MixtureDict(nn.Module):
 
     @_copy_to_script_wrapper
     def values(self):
-        chain(self._buffer_dict.values(), self._param_dict.values(), self._module_dict.values())
+        chain(self._buffer_dict.values(),
+              self._param_dict.values(), self._module_dict.values())
 
     def update(self, values):
         if not isinstance(values, container_abcs.Iterable):
@@ -386,12 +401,14 @@ class MixtureDict(nn.Module):
                 if not isinstance(m, container_abcs.Iterable):
                     raise TypeError(
                         "MixtureDict update sequence element "
-                        "#" + str(j) + " should be Iterable; is" + type(m).__name__
+                        "#" + str(j) + " should be Iterable; is" +
+                        type(m).__name__
                     )
                 if not len(m) == 2:
                     raise ValueError(
                         "MixtureDict update sequence element "
-                        "#" + str(j) + " has length " + str(len(m)) + "; 2 is required"
+                        "#" + str(j) + " has length " +
+                        str(len(m)) + "; 2 is required"
                     )
                 self[m[0]] = m[1]
 
