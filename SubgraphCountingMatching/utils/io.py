@@ -160,7 +160,11 @@ def load_data_v2(graph_dir, train_key_file, test_key_file):
             x["id"] = key
             x["pattern"] = ig.Graph.from_networkx(pattern)
             x["graph"] = ig.Graph.from_networkx(graph)
-            x["subisomorphisms"] = np.expand_dims(np.array(mapping).T[1], 0)
+            if len(mapping) > 0:
+                x["subisomorphisms"] = np.expand_dims(
+                    np.array(mapping).T[1], 0)
+            else:
+                x["subisomorphisms"] = np.array([])
             x["counts"] = 1
             train_data.append(x)
 
@@ -171,7 +175,11 @@ def load_data_v2(graph_dir, train_key_file, test_key_file):
             x["id"] = key
             x["pattern"] = ig.Graph.from_networkx(pattern)
             x["graph"] = ig.Graph.from_networkx(graph)
-            x["subisomorphisms"] = np.expand_dims(np.array(mapping).T[1], 0)
+            if len(mapping) > 0:
+                x["subisomorphisms"] = np.expand_dims(
+                    np.array(mapping).T[1], 0)
+            else:
+                x["subisomorphisms"] = np.array([])
             x["counts"] = 1
             test_data.append(x)
 
