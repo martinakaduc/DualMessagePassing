@@ -1437,21 +1437,21 @@ if __name__ == "__main__":
                     len(dataset.data)*config["train_ratio"])]
 
                 # circurriculum learning
-                sampler = CircurriculumSampler(
-                    dataset,
-                    learning_by=["p_len", "g_len"],
-                    used_ratio=min(
-                        1.0, 0.5 + epoch / min(config["train_epochs"] * 0.06, config["early_stop_rounds"])),
-                    batch_size=config["train_batch_size"],
-                    group_by=["g_len", "p_len"],
-                    shuffle=True,
-                    seed=config["seed"],
-                    drop_last=False
-                )
-                sampler.set_epoch(epoch)
+                # sampler = CircurriculumSampler(
+                #     dataset,
+                #     learning_by=["p_len", "g_len"],
+                #     used_ratio=min(
+                #         1.0, 0.5 + epoch / min(config["train_epochs"] * 0.06, config["early_stop_rounds"])),
+                #     batch_size=config["train_batch_size"],
+                #     group_by=["g_len", "p_len"],
+                #     shuffle=True,
+                #     seed=config["seed"],
+                #     drop_last=False
+                # )
+                # sampler.set_epoch(epoch)
                 data_loader = DataLoader(
                     dataset,
-                    batch_sampler=sampler,
+                    # batch_sampler=sampler,
                     collate_fn=partial(
                         dataset.batchify,
                         return_weights=config["match_weights"]
