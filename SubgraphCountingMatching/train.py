@@ -561,7 +561,7 @@ def train_epoch(model, optimizer, scheduler, data_type, data_loader, device, con
 
     model.train()
 
-    for batch_id, batch in enumerate(data_loader):
+    for batch_id, batch in enumerate(tqdm(data_loader)):
         if len(batch) == 5:
             ids, pattern, graph, counts, (node_weights, edge_weights) = batch
             p_perm_pool, p_n_perm_matrix, p_e_perm_matrix = None, None, None
