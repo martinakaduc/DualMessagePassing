@@ -1132,7 +1132,6 @@ class Graph(dgl.DGLGraph):
 
         if graph is None:
             super(Graph, self).__init__(multigraph=True)
-            self.readonly(True)
             self.ndata[NODEID] = th.zeros((0, ), dtype=th.long)
             self.ndata[NODELABEL] = th.zeros((0, ), dtype=th.long)
             self.edata[EDGEID] = th.zeros((0, ), dtype=th.long)
@@ -1183,7 +1182,6 @@ class Graph(dgl.DGLGraph):
                 self.add_nodes(graph.vcount())
                 edges = graph.get_edgelist()
                 self.add_edges([e[0] for e in edges], [e[1] for e in edges])
-                self.readonly(True)
 
                 self._batch_num_nodes = None
                 self._batch_num_edges = None
