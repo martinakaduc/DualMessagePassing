@@ -1327,18 +1327,18 @@ if __name__ == "__main__":
     # calculate the degrees, norms, and lambdas
     max_neigenv = 4.0
     max_eeigenv = 4.0
-    if logger:
-        logger.info("calculating degress...")
-    for data_type in datasets:
-        calculate_degrees(datasets[data_type])
-        if isinstance(datasets[data_type], GraphAdjDataset):
-            # calculate_norms(datasets[data_type], self_loop=True) # models handle norms
-            calculate_eigenvalues(datasets[data_type])
-            for x in datasets[data_type]:
-                max_neigenv = max(
-                    max_neigenv, x["pattern"].ndata[NODEEIGENV][0].item())
-                max_eeigenv = max(
-                    max_eeigenv, x["pattern"].edata[EDGEEIGENV][0].item())
+    # if logger:
+    #     logger.info("calculating degress...")
+    # for data_type in datasets:
+    #     calculate_degrees(datasets[data_type])
+    #     if isinstance(datasets[data_type], GraphAdjDataset):
+    #         # calculate_norms(datasets[data_type], self_loop=True) # models handle norms
+    #         calculate_eigenvalues(datasets[data_type])
+    #         for x in datasets[data_type]:
+    #             max_neigenv = max(
+    #                 max_neigenv, x["pattern"].ndata[NODEEIGENV][0].item())
+    #             max_eeigenv = max(
+    #                 max_eeigenv, x["pattern"].edata[EDGEEIGENV][0].item())
 
     if config["rep_net"].endswith("LRP"):
         lrp_datasets = OrderedDict()

@@ -18,6 +18,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 from constants import *
 from utils import batch_convert_tensor_to_tensor
+from utils.graph import compute_largest_eigenvalues
 
 
 @numba.jit(numba.int64(numba.int64[:], numba.int64, numba.int64, numba.int64), nopython=True)
@@ -1498,18 +1499,34 @@ class GraphAdjDataset(Dataset):
                 x["g_len"] = len(x["graph"])
                 x["p_len"] = len(x["pattern"])
 
-                if NODEID not in x["graph"].ndata:
-                    x["graph"].ndata[NODEID] = th.arange(
-                        x["graph"].number_of_nodes())
-                if EDGEID not in x["graph"].edata:
-                    x["graph"].edata[EDGEID] = th.arange(
-                        x["graph"].number_of_edges())
-                if NODEID not in x["pattern"].ndata:
-                    x["pattern"].ndata[NODEID] = th.arange(
-                        x["pattern"].number_of_nodes())
-                if EDGEID not in x["pattern"].edata:
-                    x["pattern"].edata[EDGEID] = th.arange(
-                        x["pattern"].number_of_edges())
+                x["graph"].ndata[NODEID] = th.arange(
+                    x["graph"].number_of_nodes())
+                x["graph"].edata[EDGEID] = th.arange(
+                    x["graph"].number_of_edges())
+                x["pattern"].ndata[NODEID] = th.arange(
+                    x["pattern"].number_of_nodes())
+                x["pattern"].edata[EDGEID] = th.arange(
+                    x["pattern"].number_of_edges())
+                    
+                x["pattern"].ndata[INDEGREE] = x["pattern"].in_degrees()
+                x["pattern"].ndata[OUTDEGREE] = x["pattern"].out_degrees()
+                x["graph"].ndata[INDEGREE] = x["graph"].in_degrees()
+                x["graph"].ndata[OUTDEGREE] = x["graph"].out_degrees()
+                
+                
+                node_eigenv, edge_eigenv = compute_largest_eigenvalues(
+                    x["pattern"])
+                x["pattern"].ndata[NODEEIGENV] = th.clamp_min(node_eigenv, 1.0).repeat(
+                    x["pattern"].number_of_nodes()).unsqueeze(-1)
+                x["pattern"].edata[EDGEEIGENV] = th.clamp_min(edge_eigenv, 1.0).repeat(
+                    x["pattern"].number_of_edges()).unsqueeze(-1)
+                
+                node_eigenv, edge_eigenv = compute_largest_eigenvalues(
+                    x["graph"])
+                x["graph"].ndata[NODEEIGENV] = th.clamp_min(node_eigenv, 1.0).repeat(
+                    x["graph"].number_of_nodes()).unsqueeze(-1)
+                x["graph"].edata[EDGEEIGENV] = th.clamp_min(edge_eigenv, 1.0).repeat(
+                    x["graph"].number_of_edges()).unsqueeze(-1)
             return x
 
         return self.data[idx]
