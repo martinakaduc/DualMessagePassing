@@ -14,7 +14,14 @@ from collections import OrderedDict
 from copy import deepcopy
 from functools import partial
 from itertools import chain
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from constants import *
@@ -978,7 +985,12 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
             "RMSE": INF,
             "AUC": 0.0,
             "MNED": INF,
-            "MEED": INF
+            "MEED": INF,
+            "ACC": 0.0,
+            "F1": 0.0,
+            "PREC": 0.0,
+            "RECALL": 0.0,
+            "PR": 0.0,
         },
         "time": {
             "avg": list(),
@@ -995,6 +1007,26 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
             F.relu(pred), target)
     elif config["eval_metric"] == "AUC":
         def eval_crit(pred, target): return roc_auc_score(
+            target.cpu().numpy() > 0,
+            F.relu(pred).detach().cpu().numpy())
+    elif config["eval_metric"] == "ACC":
+        def eval_crit(pred, target): return accuracy_score(
+            target.cpu().numpy() > 0,
+            F.relu(pred).detach().cpu().numpy())
+    elif config["eval_metric"] == "F1":
+        def eval_crit(pred, target): return f1_score(
+            target.cpu().numpy() > 0,
+            F.relu(pred).detach().cpu().numpy())
+    elif config["eval_metric"] == "PR":
+        def eval_crit(pred, target): return average_precision_score(
+            target.cpu().numpy() > 0,
+            F.relu(pred).detach().cpu().numpy())
+    elif config["eval_metric"] == "PREC":
+        def eval_crit(pred, target): return precision_score(
+            target.cpu().numpy() > 0,
+            F.relu(pred).detach().cpu().numpy())
+    elif config["eval_metric"] == "RECALL":
+        def eval_crit(pred, target): return recall_score(
             target.cpu().numpy() > 0,
             F.relu(pred).detach().cpu().numpy())
     else:
@@ -1146,6 +1178,16 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
         ).item()
         evaluate_results["error"]["AUC"] = roc_auc_score(
             (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
+        evaluate_results["error"]["ACC"] = accuracy_score(
+            (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
+        evaluate_results["error"]["F1"] = f1_score(
+            (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
+        evaluate_results["error"]["PREC"] = precision_score(
+            (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
+        evaluate_results["error"]["RECALL"] = recall_score(
+            (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
+        evaluate_results["error"]["PR"] = average_precision_score(
+            (counts > 0).cpu().numpy(), (pred_c > 0).cpu().numpy())
         evaluate_results["time"]["total"] = evaluate_results["time"]["avg"].sum(
         ).item()
         epoch_avg_eval_metric = total_eval_metric / total_cnt
@@ -1161,6 +1203,16 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
                               evaluate_results["error"]["RMSE"], epoch)
             writer.add_scalar("%s/eval-AUC-epoch" % (data_type),
                               evaluate_results["error"]["AUC"], epoch)
+            writer.add_scalar("%s/eval-ACC-epoch" % (data_type),
+                              evaluate_results["error"]["ACC"], epoch)
+            writer.add_scalar("%s/eval-F1-epoch" % (data_type),
+                              evaluate_results["error"]["F1"], epoch)
+            writer.add_scalar("%s/eval-PREC-epoch" % (data_type),
+                              evaluate_results["error"]["PREC"], epoch)
+            writer.add_scalar("%s/eval-RECALL-epoch" % (data_type),
+                              evaluate_results["error"]["RECALL"], epoch)
+            writer.add_scalar("%s/eval-PR-epoch" % (data_type),
+                              evaluate_results["error"]["PR"], epoch)
             writer.add_scalar("%s/eval-MNED-epoch" % (data_type),
                               evaluate_results["error"]["MNED"], epoch)
             writer.add_scalar("%s/eval-MEED-epoch" % (data_type),
@@ -1186,6 +1238,16 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
                         "\n" + " " * (getattr(logger, "prefix_len") + 1) +
                         "eval-AUC-epoch":
                             evaluate_results["error"]["AUC"],
+                        "eval-ACC-epoch":
+                            evaluate_results["error"]["ACC"],
+                        "eval-F1-epoch":
+                            evaluate_results["error"]["F1"],
+                        "eval-PREC-epoch":
+                            evaluate_results["error"]["PREC"],
+                        "eval-RECALL-epoch":
+                            evaluate_results["error"]["RECALL"],
+                        "eval-PR-epoch":
+                            evaluate_results["error"]["PR"],
                         "eval-MNED-epoch":
                             evaluate_results["error"]["MNED"],
                         "eval-MEED-epoch":
