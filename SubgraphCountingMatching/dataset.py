@@ -1494,7 +1494,7 @@ class GraphAdjDataset(Dataset):
                     x["subisomorphisms"] = th.from_numpy(np.expand_dims(
                         np.array(mapping).T[1], 0))
                 else:
-                    x["subisomorphisms"] = th.tensor([])
+                    x["subisomorphisms"] = th.from_numpy(np.array(mapping, dtype=np.int64))
                 x["counts"] = 1
 
                 x["g_len"] = len(x["graph"])
