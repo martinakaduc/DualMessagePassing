@@ -775,6 +775,18 @@ def get_eval_config():
     )
 
     parser.add_argument(
+        "--train_key",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
+        "--test_key",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
         "--save_data_dir",
         type=str,
         default=""
