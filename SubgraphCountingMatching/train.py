@@ -1527,18 +1527,18 @@ if __name__ == "__main__":
                 if best_bp_epoch == -1 or bp_loss <= train_bp_losses[best_bp_epoch]:
                     best_bp_epoch = epoch
             else:
-                sampler = BucketSampler(
-                    dataset,
-                    group_by=["g_len", "p_len"],
-                    batch_size=config["eval_batch_size"],
-                    shuffle=False,
-                    seed=config["seed"],
-                    drop_last=False
-                )
-                sampler.set_epoch(epoch)
+                # sampler = BucketSampler(
+                #     dataset,
+                #     group_by=["g_len", "p_len"],
+                #     batch_size=config["eval_batch_size"],
+                #     shuffle=False,
+                #     seed=config["seed"],
+                #     drop_last=False
+                # )
+                # sampler.set_epoch(epoch)
                 data_loader = DataLoader(
                     dataset,
-                    batch_sampler=sampler,
+                    # batch_sampler=sampler,
                     collate_fn=partial(
                         dataset.batchify, return_weights=config["match_weights"]),
                 )
