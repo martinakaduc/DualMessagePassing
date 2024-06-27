@@ -1035,7 +1035,7 @@ def evaluate_epoch(model, data_type, data_loader, device, config, epoch, logger=
     model.eval()
 
     with th.no_grad():
-        for batch_id, batch in enumerate(data_loader):
+        for batch_id, batch in enumerate(tqdm(data_loader)):
             if len(batch) == 5:
                 ids, pattern, graph, counts, (node_weights,
                                               edge_weights) = batch
@@ -1549,6 +1549,8 @@ if __name__ == "__main__":
                     eval_results, os.path.join(
                         config["save_model_dir"], "%s_results%d.json" % (data_type, epoch))
                 )
+            else:
+                continue
 
             eval_metrics[data_type].append(eval_metric)
 
