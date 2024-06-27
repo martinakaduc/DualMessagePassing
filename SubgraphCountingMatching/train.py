@@ -1526,7 +1526,7 @@ if __name__ == "__main__":
                 train_bp_losses.append(bp_loss)
                 if best_bp_epoch == -1 or bp_loss <= train_bp_losses[best_bp_epoch]:
                     best_bp_epoch = epoch
-            else:
+            elif data_type == "test":
                 # sampler = BucketSampler(
                 #     dataset,
                 #     group_by=["g_len", "p_len"],
