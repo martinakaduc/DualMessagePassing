@@ -26,10 +26,9 @@ print(results)
 
 def get_avg_runtime(sg_list, all_sg_list, all_runtime):
     runtime = 0
-    # for i, sg in enumerate(all_sg_list):
-    #     if sg in sg_list:
-    #         runtime += all_runtime[i]
     # Optimize above code
+    if len(sg_list) == 0:
+        return 0
     for sg in sg_list:
         runtime += all_runtime[all_sg_list.index(sg)]
     return runtime/len(sg_list)
