@@ -21,6 +21,7 @@ results = {
     "Accuracy": df["error"]["ACC"],
 }
 
+print(results)
 
 def get_avg_runtime(sg_list, all_sg_list, all_runtime):
     runtime = 0
@@ -44,7 +45,6 @@ nondense_ss60 = [subgraph for subgraph in nondense_subgraphs if subgraph_size_di
 nondense_ss60p = [subgraph for subgraph in nondense_subgraphs if subgraph_size_dict[subgraph] > 60]
 
 results["Non-Dense Subgraphs"] = {
-    "All": get_avg_runtime(nondense_subgraphs, df["data"]["id"], df["time"]["avg"]),
     "Size <= 20": get_avg_runtime(nondense_ss20, df["data"]["id"], df["time"]["avg"]),
     "20 < Size <= 40": get_avg_runtime(nondense_ss40, df["data"]["id"], df["time"]["avg"]),
     "40 < Size <= 60": get_avg_runtime(nondense_ss60, df["data"]["id"], df["time"]["avg"]),
@@ -63,7 +63,6 @@ dense_ss60 = [subgraph for subgraph in dense_subgraphs if subgraph_size_dict[sub
 dense_ss60p = [subgraph for subgraph in dense_subgraphs if subgraph_size_dict[subgraph] > 60]
 
 results["Dense Subgraphs"] = {
-    "All": get_avg_runtime(dense_subgraphs, df["data"]["id"], df["time"]["avg"]),
     "Size <= 20": get_avg_runtime(dense_ss20, df["data"]["id"], df["time"]["avg"]),
     "20 < Size <= 40": get_avg_runtime(dense_ss40, df["data"]["id"], df["time"]["avg"]),
     "40 < Size <= 60": get_avg_runtime(dense_ss60, df["data"]["id"], df["time"]["avg"]),
